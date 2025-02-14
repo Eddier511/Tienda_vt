@@ -24,4 +24,27 @@ public class CategoriaService {
         
     }
     
+    @Transactional(readOnly=true)
+    public Categoria getCategoria(Categoria categoria) {
+        categoria=categoriaRepository.findById(categoria.getIdCategoria()).orElse(null);
+        return categoria;
+        
+    }
+    
+    @Transactional
+    public void delete(Categoria categoria) {
+        //si el idCategoria pasado existe, se elimina ese 
+        categoriaRepository.delete(categoria);
+        
+    }
+    
+    @Transactional
+    public void save(Categoria categoria) {
+        //si el objeto categoria tiene info en idCategoria, se actualiza el registro
+        //de ese idCategoria, si el objeto categoria NO tiene info en idCategoria, 
+        //se inserta un nuevo registro
+        categoriaRepository.save(categoria);
+        
+    }
+    
 }
