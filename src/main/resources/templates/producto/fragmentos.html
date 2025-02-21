@@ -42,7 +42,7 @@
                             <div class="modal-body">
                                 <div class="mb-3">
                                     <label>[[#{producto.categoria}]]</label>
-                                    <input type="number" class="form-control" name="idCategoria" required="true"/>
+                                    <select name="idCategoria" class="form-select"><option th:each="c : ${categorias}" th:value="${c.idCategoria}">[[${c.descripcion}]]</option></select>
                                 </div>
                                 <div class="mb-3">
                                     <label>[[#{producto.descripcion}]]</label>
@@ -50,7 +50,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label>[[#{producto.detalle}]]</label>
-                                    <input type="text" class="form-control" name="detalle"/>
+                                    <textarea class="form-control" name="detalle" rows="3"></textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>[[#{producto.precio}]]</label>
