@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import lombok.Data;
 
-@Data
+//@Data
 @Entity
 @Table(name="producto")
 public class Producto implements Serializable {
@@ -17,13 +17,27 @@ public class Producto implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idProducto;
-    private Long idCategoria;
+    //private Long idCategoria; no se usa, se tiene en un objeto categoria
     private String descripcion;
     private String detalle;
     private double precio;
     private int existencias;
     private String rutaImagen;
     private boolean activo;
+    @ManyToOne
+    @JoinColumn(name="id_categoria")
+    
+    private Categoria categoria;
+
+    public Categoria getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(Categoria categoria) {
+        this.categoria = categoria;
+    }
+    
+
 
     public Long getIdProducto() {
         return idProducto;
@@ -55,14 +69,6 @@ public class Producto implements Serializable {
 
     public void setExistencias(int existencias) {
         this.existencias = existencias;
-    }
-
-    public Long getIdCategoria() {
-        return idCategoria;
-    }
-
-    public void setIdCategoria(Long idCategoria) {
-        this.idCategoria = idCategoria;
     }
 
     public String getDescripcion() {

@@ -1,4 +1,4 @@
-//SerialVersionUID funciona para que la base de datos comunique el id auto 
+ //SerialVersionUID funciona para que la base de datos comunique el id auto 
 //incremental que esta siendo asignado, para aplicarlo en el codigo.
 
 //Data para especializar la clase, para que solamente sea para guardar data no procesar.
