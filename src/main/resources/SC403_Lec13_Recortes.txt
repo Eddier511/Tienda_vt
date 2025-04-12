@@ -1,0 +1,502 @@
+001 templates\fragmentos
+======================
+<!-- fragmento 2 para el listado de productos en el carrito-->
+        <section th:fragment="listado">
+            <div class="row p-3">
+                <div class="col-md-9">
+                    <div class="card p-2">
+                        <div class="card-header">
+                            <h4>[[#{carrito.titulo}]]</h4>
+                        </div>
+                        <div class="card-body">
+                            <div th:if="${listaItems != null and !listaItems.empty}">
+                                <table class="table table-dark table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>[[#{producto.descripcion}]]</th>
+                                            <th>[[#{producto.precio}]]</th>
+                                            <th>[[#{carrito.cantidad}]]</th>
+                                            <th>[[#{carrito.total}]]</th>
+                                            <th>[[#{producto.imagen}]]</th>                                            
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="item : ${listaItems}">
+                                            <td>[[${item.idProducto}]]</td>
+                                            <td>[[${item.descripcion}]]</td>
+                                            <td>[[${item.precio}]]</td>
+                                            <td>[[${item.cantidad}]]</td>
+                                            <td>[[${item.precio}*${item.cantidad}]]</td>
+                                            <td><img th:src="@{${item.rutaImagen}}" alt="noData" height="75"/></td>                                            
+                                            <td>
+                                                <a class="btn btn-danger" th:href="@{/carrito/eliminar/}+${item.idProducto}">
+                                                    <i class="fas fa-trash"></i> [[#{accion.eliminar}]]
+                                                </a>
+                                                <a class="btn btn-success" th:href="@{/carrito/modificar/}+${item.idProducto}">
+                                                    <i class="fas fa-pencil"></i> [[#{accion.actualizar}]]
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-center p-2" th:if="${listaItems == null or listaItems.empty}">
+                                <span>[[#{lista.vacia}]]</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                   <div class="card text-center bg-primary text-white mb-3">
+                            <div class="card-body">
+                                <h3>[[#{carrito.totalCompra}]]</h3>
+                                <h4 class="fs-4">
+                                    [[${totalCompra}]]
+                                </h4>
+                            </div>
+                        </div>
+                        <div class="card text-center bg-success text-white mb-3">
+                            <div class="card-body">
+                                <a th:href="@{/}"
+                                   class="btn btn-success">
+                                    <i class='fas fa-reply'></i> [[#{carrito.seguirComprando}]]
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card text-center bg-info text-white mb-3">
+                            <div class="card-body">
+                                <a th:href="@{/facturar/carrito}"
+                                   class="btn btn-info">
+                                    <i class='fas fa-fordward'></i> [[#{carrito.facturar}]]
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+002 carrito\listado
+======================
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
+      xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{layout/plantilla :: head}">
+        <title>Techshop</title>
+        <meta charset="UTF-8"/>        
+
+    </head>
+    <body>
+        <header th:replace="~{layout/plantilla :: header}"/>
+
+        <section th:replace="~{carrito/fragmentos :: listado}"/>
+        
+        <footer th:replace="~{layout/plantilla :: footer}"/>
+    </body>
+</html>
+
+
+003 controller\CarritoController
+==========================
+ @GetMapping("/listado")
+    public String listado(Model model) {
+        var lista = itemService.getItems();
+        model.addAttribute("listaItems", lista);
+        return "/carrito/listado";
+    }
+
+    @GetMapping("/eliminar/{idProducto}")
+    public String eliminar(Model model, Item item) {
+        itemService.delete(item);
+        return "redirect:/carrito/listado";
+    }
+
+    @GetMapping("/modificar/{idProducto}")
+    public String modificar(Model model, Item item) {
+        item = itemService.getItem(item);
+        model.addAttribute("item",item);
+        return "/carrito/modifica";
+    }
+    
+    @PostMapping("/guardar")
+    public String guardar(Item item) {
+        itemService.update(item);
+        return "redirect:/carrito/listado";
+    }
+
+004 service\ItemService
+=======================
+
+    //El siguiente método elimina un item de la varible de session
+    public void delete(Item item) {
+        //Se recupera la variable de session
+        @SuppressWarnings("unchecked")
+        List<Item> lista = (List) session.getAttribute("listaItems");
+        //Se valida si la lista existe...
+        if (lista != null) {
+            //Se busca el idProducto en la lista
+            boolean existe = false;
+            var posicion = -1;
+            for (Item i : lista) {
+                posicion++;
+                if (Objects.equals(i.getIdProducto(), item.getIdProducto())) {
+                    existe = true;
+                    break;
+                }
+            }
+            //Validamos si es la primera vez que se ingresa el producto en el carrito
+            if (existe) {
+                lista.remove(posicion);
+                session.setAttribute("listaItems", lista);
+            }
+        }
+    }
+
+    //El siguiente método actualiza la cantidad un item en la varible de session
+    public void update(Item item) {
+        //Se recupera la variable de session
+        @SuppressWarnings("unchecked")
+        List<Item> lista = (List) session.getAttribute("listaItems");
+        //Se valida si la lista existe...
+        if (lista != null) {
+            //Se busca el idProducto en la lista
+            boolean existe = false;
+            for (Item i : lista) {
+                if (Objects.equals(i.getIdProducto(), item.getIdProducto())) {
+                    i.setCantidad(item.getCantidad());
+                    break;
+                }
+            }            
+        }
+    }
+
+005 carrito\fragementos (editarItem)
+============================
+<section th:fragment="editarItem">
+             <div class="row row-cols-6 p-10">
+                 <a th:href="@{/carrito/listado}"
+                     class="btn btn-primary">
+                     <i class="fas fa-replay"></i> [[#{accion.regresar}]]
+                 </a>
+             </div>
+             <div class="row row-cols-2">
+                 <div class="card">
+                     <div class="card-header">[[#{carrito.datos}]]</div>
+                     <div class="card-body">
+                         <h5 class="card-title">[[${item.descripcion}]]</h5>
+                         <h6 class="card-subtitle mb-2 text-muted text-end">
+                             ¢[[${item.precio}]] ([[${item.existencias}]])
+                         </h6>
+                         <p class="card-text">[[${item.detalle}]]</p>
+                     </div>
+                 </div>
+                 <div class="card">                     
+                     <div class="card-body">
+                         <figure>
+                             <img th:src="@{${item.rutaImagen}}" width="120"
+                         </figure>
+                         <form th:action="@{/carrito/guardar}"
+                               method="post" 
+                               th:object="${item}">
+                             <input type="hidden"
+                                    name="idProducto"
+                                    th:field="*{idProducto}"/>
+                             <div class="form-group">
+                                 <label>[[#{carrito.cantidad}]]</label>
+                                 <input type="number"
+                                        name="cantidad"
+                                        th:field="*{cantidad}"
+                                        min="1"
+                                        th:max="${item.existencias}"
+                             </div>
+                             <div class="form-group">
+                                 <button class="btn btn-success" type="submit">
+                                     <i class="fas fa-save"></i> [[#{accion.guardar}]]
+                                 </button>
+                             </div>
+                         </form>
+                         <a th:href="@{/carrito/eliminar/}+${item.idProducto}"
+                             class="btn btn-danger">
+                             <i class="fas fa-trash"></i> [[#{accion.eliminar}]]
+                         </a>
+                     </div>
+                 </div>
+             </div>             
+         </section>
+
+006 domain\Factura.java
+=======================
+
+package com.tienda.domain;
+
+import jakarta.persistence.*;
+import java.io.Serializable;
+import java.util.Calendar;
+import java.util.Date;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "factura")
+public class Factura implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_factura")
+    private Long idFactura;
+    private Long idUsuario;
+    private Date fecha;
+    private double total;
+    private int estado;
+
+    public Factura() {
+    }
+
+    public Factura(Long idUSuario) {
+        this.idUsuario = idUSuario;
+        this.fecha = Calendar.getInstance().getTime();
+        this.estado = 1;
+    }
+
+    public Long getIdFactura() {
+        return idFactura;
+    }
+
+    public void setIdFactura(Long idFactura) {
+        this.idFactura = idFactura;
+    }
+
+    public Long getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(Long idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public Date getFecha() {
+        return fecha;
+    }
+
+    public void setFecha(Date fecha) {
+        this.fecha = fecha;
+    }
+
+    public double getTotal() {
+        return total;
+    }
+
+    public void setTotal(double total) {
+        this.total = total;
+    }
+
+    public int getEstado() {
+        return estado;
+    }
+
+    public void setEstado(int estado) {
+        this.estado = estado;
+    }   
+    
+}
+
+
+007 domain\Venta.java
+=======================
+package com.tienda.domain;
+
+import jakarta.persistence.*;
+import java.io.Serializable;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "venta")
+public class Venta implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_venta")
+    private Long idVenta;
+    private Long idFactura;
+    private Long idProducto;
+    private double precio;
+    private int cantidad;
+
+    public Venta() {
+    }
+
+    public Venta(Long idFactura, Long idProducto, double precio, int cantidad) {
+        this.idFactura = idFactura;
+        this.idProducto = idProducto;
+        this.precio = precio;
+        this.cantidad = cantidad;
+    }
+
+    public Long getIdVenta() {
+        return idVenta;
+    }
+
+    public void setIdVenta(Long idVenta) {
+        this.idVenta = idVenta;
+    }
+
+    public Long getIdFactura() {
+        return idFactura;
+    }
+
+    public void setIdFactura(Long idFactura) {
+        this.idFactura = idFactura;
+    }
+
+    public Long getIdProducto() {
+        return idProducto;
+    }
+
+    public void setIdProducto(Long idProducto) {
+        this.idProducto = idProducto;
+    }
+
+    public double getPrecio() {
+        return precio;
+    }
+
+    public void setPrecio(double precio) {
+        this.precio = precio;
+    }
+
+    public int getCantidad() {
+        return cantidad;
+    }
+
+    public void setCantidad(int cantidad) {
+        this.cantidad = cantidad;
+    }
+}
+
+008 repository\FacturaRepository.java
+=======================
+
+package com.tienda.repository;
+
+import com.tienda.domain.Factura;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface FacturaRepository extends JpaRepository <Factura,Long> {
+     
+}
+
+009 repository\VentaRepository.java
+=======================
+package com.tienda.repository;
+
+import com.tienda.domain.Venta;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface VentaRepository extends JpaRepository <Venta,Long> {
+     
+}
+
+010 service\ItemService.java
+=======================
+
+ @Autowired
+    private UsuarioRepository usuarioRepository;
+    @Autowired
+    private ProductoRepository productoRepository;
+    @Autowired
+    private FacturaRepository facturaRepository;
+    @Autowired
+    private VentaRepository ventaRepository;
+    
+    public void facturar() {
+        //Se debe recuperar el usuario autenticado y obtener su idUsuario
+        String username = "";
+        var principal = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if (principal instanceof UserDetails userDetails) {
+            username = userDetails.getUsername();
+        } else {
+            if (principal != null) {
+                username = principal.toString();
+            }
+        }
+
+        if (username.isBlank()) {
+            System.out.println("username en blanco...");
+            return;
+        }
+
+        Usuario usuario = usuarioRepository.findByUsername(username);
+        if (usuario == null) {
+            System.out.println("Usuario no existe en usuarios...");
+            return;
+        }
+
+        //Se debe registrar la factura incluyendo el usuario
+        Factura factura = new Factura(usuario.getIdUsuario());
+        factura = facturaRepository.save(factura);
+
+        //Se debe registrar las ventas de cada producto -actualizando existencias-
+        @SuppressWarnings("unchecked")
+        List<Item> listaItems = (List) session.getAttribute("listaItems");
+        if (listaItems != null) {
+            double total = 0;
+            for (Item i : listaItems) {
+                var producto = productoRepository.getReferenceById(i.getIdProducto());
+                if (producto.getExistencias() >= i.getCantidad()) {
+                    Venta venta = new Venta(factura.getIdFactura(),
+                            i.getIdProducto(),
+                            i.getPrecio(),
+                            i.getCantidad());
+                    ventaRepository.save(venta);
+                    producto.setExistencias(producto.getExistencias() - i.getCantidad());
+                    productoRepository.save(producto);
+                    total += i.getCantidad() * i.getPrecio();
+                }
+            }
+
+            //Se debe registrar el total de la venta en la factura
+            factura.setTotal(total);
+            facturaRepository.save(factura);
+
+            //Se debe limpiar el carrito la lista...
+            listaItems.clear();
+        }
+    }
+
+011 controller\FacturarController.java
+=======================
+
+package com.tienda.controller;
+
+import com.tienda.service.ItemService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+@RequestMapping("/facturar")
+public class FacturarController {
+     @Autowired
+    private ItemService itemService;
+    
+        //Para facturar los productos del carrito... no implementado...
+    @GetMapping("/carrito")
+    public String facturarCarrito() {
+        itemService.facturar();
+        return "redirect:/";
+    }
+}
